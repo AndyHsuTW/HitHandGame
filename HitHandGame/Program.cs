@@ -51,7 +51,7 @@ namespace HitHandGame
                         await soundManager.PlayThreeSoundCombo();
                         break;
                     case "6":
-                        StartAutoPlay(soundManager);
+                        await StartAutoPlay(soundManager);
                         break;
                     case "7":
                         running = false;
@@ -110,7 +110,8 @@ namespace HitHandGame
             Console.WriteLine("  6. 自動隨機播放模式");
             Console.WriteLine("  7. 結束程式");
             Console.WriteLine("  8. 測試 SoundTouch 功能");
-            Console.WriteLine("  9. 測試播放音檔 (不同速度)");            Console.WriteLine(" 10. 測試基本播放功能");
+            Console.WriteLine("  9. 測試播放音檔 (不同速度)");
+            Console.WriteLine(" 10. 測試基本播放功能");
             Console.WriteLine(" 11. 測試 NAudio VariSpeed 播放");
             Console.WriteLine(" 12. 測試簡單速度調整");
             Console.WriteLine(" 13. 測試重取樣速度調整");
@@ -124,7 +125,7 @@ namespace HitHandGame
         /// 自動播放模式
         /// </summary>
         /// <param name="soundManager">音效管理器</param>
-        static async void StartAutoPlay(SoundManager soundManager)
+        static async Task StartAutoPlay(SoundManager soundManager)
         {
             Console.WriteLine("進入自動播放模式 (按 ESC 鍵退出)");
             Console.WriteLine("每次將播放三個音檔組合：隨機(1-9).mp3 → hit.mp3 → 隨機(1-9).mp3");
@@ -163,28 +164,35 @@ namespace HitHandGame
             Console.WriteLine();
 
             bool autoPlaying = true;
-            while (autoPlaying)
+            try
             {
-                // 播放三音檔組合，傳入最大編號與速度
-                await soundManager.PlayThreeSoundCombo(maxNumber, speed);
-
-                // 等待指定時間或按下 ESC 鍵
-                DateTime endTime = DateTime.Now.AddSeconds(interval);
-                while (DateTime.Now < endTime)
+                while (autoPlaying)
                 {
-                    if (Console.KeyAvailable)
+                    // 播放三音檔組合，傳入最大編號與速度
+                    await soundManager.PlayThreeSoundCombo(maxNumber, speed);
+
+                    // 等待指定時間或按下 ESC 鍵
+                    DateTime endTime = DateTime.Now.AddSeconds(interval);
+                    while (DateTime.Now < endTime)
                     {
-                        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                        if (keyInfo.Key == ConsoleKey.Escape)
+                        if (Console.KeyAvailable)
                         {
-                            autoPlaying = false;
-                            break;
+                            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                            if (keyInfo.Key == ConsoleKey.Escape)
+                            {
+                                autoPlaying = false;
+                                break;
+                            }
                         }
+                        Thread.Sleep(100);
                     }
-                    Thread.Sleep(100);
                 }
-            }            soundManager.StopCurrentSound();
-            Console.WriteLine("自動播放已停止");
+            }
+            finally
+            {
+                soundManager.StopCurrentSound();
+                Console.WriteLine("自動播放已停止");
+            }
         }
 
         /// <summary>
