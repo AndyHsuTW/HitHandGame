@@ -219,38 +219,50 @@ namespace HitHandGame
             int thirdIndex = _random.Next(remainingFiles.Count);
             string thirdFile = remainingFiles[thirdIndex];
 
-            Console.WriteLine($"播放組合: {Path.GetFileName(firstFile)} → {Path.GetFileName(hitFile)} → {Path.GetFileName(thirdFile)} (速度: {speed}x)");
-
-            try
+            Console.WriteLine($"播放組合: {Path.GetFileName(firstFile)} → {Path.GetFileName(hitFile)} → {Path.GetFileName(thirdFile)} (速度: {speed}x)");            try
             {
-                StopCurrentSound();
-                using var firstReader = new AudioFileReader(firstFile);
-                using var hitReader = new AudioFileReader(hitFile);
-                using var thirdReader = new AudioFileReader(thirdFile);
-
-                var concat = new ConcatenatingSampleProvider(new[] { firstReader, hitReader, thirdReader });
-                ISampleProvider provider = concat;
+                // 創建音檔讀取器 - 不使用 using，因為需要在播放過程中保持活躍
+                var firstReader = new AudioFileReader(firstFile);
+                var hitReader = new AudioFileReader(hitFile);
+                var thirdReader = new AudioFileReader(thirdFile);
+                
+                Console.WriteLine($"[DEBUG] 音檔長度 - 第1個: {firstReader.TotalTime}, hit: {hitReader.TotalTime}, 第3個: {thirdReader.TotalTime}");
+                
+                // 使用自定義的順序播放提供者
+                var sequentialProvider = new SequentialSampleProvider(new ISampleProvider[] { firstReader, hitReader, thirdReader }, true);
+                ISampleProvider provider = sequentialProvider;
+                
+                // 如果需要調整速度，包裝在 SoundTouch 處理器中
                 if (speed != 1.0f)
                 {
-                    provider = new ImprovedSoundTouchSampleProvider(provider, speed);
+                    Console.WriteLine($"[DEBUG] 使用 SoundTouch 調整速度: {speed}x");
+                    provider = new ImprovedSoundTouchSampleProvider(provider, speed, true); // 開啟偵錯
                 }
 
+                StopCurrentSound();
                 _wavePlayer = new WaveOutEvent();
                 _wavePlayer.Init(provider);
                 _isPlaying = true;
+                
                 var playbackComplete = new TaskCompletionSource<bool>();
                 _wavePlayer.PlaybackStopped += (s, e) =>
                 {
+                    Console.WriteLine("三音檔組合播放完成");
+                    
+                    // 清理資源
                     _wavePlayer?.Dispose();
                     _wavePlayer = null;
+                    firstReader?.Dispose();
+                    hitReader?.Dispose();
+                    thirdReader?.Dispose();
                     _isPlaying = false;
+                    
                     playbackComplete.SetResult(true);
                 };
 
+                Console.WriteLine($"[DEBUG] 開始播放合併音檔 (速度: {speed}x)");
                 _wavePlayer.Play();
                 await playbackComplete.Task;
-
-                Console.WriteLine("三音檔組合播放完成");
             }
             catch (Exception ex)
             {
@@ -274,14 +286,20 @@ namespace HitHandGame
             StopCurrentSound();
             _audioFileReader = new AudioFileReader(filePath);
             ISampleProvider sampleProvider = _audioFileReader;
+            
+            Console.WriteLine($"[DEBUG] 播放: {Path.GetFileName(filePath)}, 速度: {speed}x");
             Console.WriteLine($"[DEBUG] WaveFormat: {_audioFileReader.WaveFormat.Encoding}, {_audioFileReader.WaveFormat.BitsPerSample}bit, {_audioFileReader.WaveFormat.SampleRate}Hz, {_audioFileReader.WaveFormat.Channels}ch");
+            
             if (speed != 1.0f)
             {
-                sampleProvider = new ImprovedSoundTouchSampleProvider(_audioFileReader, speed);
+                Console.WriteLine($"[DEBUG] 使用 SoundTouch 調整速度: {speed}x");
+                sampleProvider = new ImprovedSoundTouchSampleProvider(_audioFileReader, speed, true); // 開啟偵錯
             }
+            
             _wavePlayer = new WaveOutEvent();
             _wavePlayer.Init(sampleProvider);
             _isPlaying = true;
+            
             var playbackComplete = new TaskCompletionSource<bool>();
             _wavePlayer.PlaybackStopped += (sender, e) =>
             {
@@ -291,9 +309,10 @@ namespace HitHandGame
                 _isPlaying = false;
                 playbackComplete.SetResult(true);
             };
+            
             _wavePlayer.Play();
             await playbackComplete.Task;
-        }        /// <summary>
+        }/// <summary>
         /// 測試播放單一音檔的方法（供偵錯使用）
         /// </summary>
         public async Task TestPlaySingleSound(string fileName, float speed = 1.5f)

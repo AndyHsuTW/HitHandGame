@@ -76,9 +76,13 @@ namespace HitHandGame
                         break;
                     case "14":
                         await AlternativeSpeedSolution.TestPlaybackSpeedAdjustment(1.5f);
-                        break;
-                    case "15":
+                        break;                    case "15":
                         await AlternativeSpeedSolution.TestPitchShifting(1.5f);
+                        break;                    case "16":
+                        WaveFormatDiagnostics.DiagnoseWaveFormatIssues();
+                        break;
+                    case "17":
+                        await WaveFormatDiagnostics.SimplePlaybackTest();
                         break;
                     case "h":
                     case "help":
@@ -113,10 +117,11 @@ namespace HitHandGame
             Console.WriteLine("  9. 測試播放音檔 (不同速度)");
             Console.WriteLine(" 10. 測試基本播放功能");
             Console.WriteLine(" 11. 測試 NAudio VariSpeed 播放");
-            Console.WriteLine(" 12. 測試簡單速度調整");
-            Console.WriteLine(" 13. 測試重取樣速度調整");
+            Console.WriteLine(" 12. 測試簡單速度調整");            Console.WriteLine(" 13. 測試重取樣速度調整");
             Console.WriteLine(" 14. 測試播放速度調整");
             Console.WriteLine(" 15. 測試 Pitch Shifting");
+            Console.WriteLine(" 16. 🔍 WaveFormat 診斷測試");
+            Console.WriteLine(" 17. 🔍 簡單 SoundTouch 播放測試");
             Console.WriteLine("  h. 顯示說明");
             Console.WriteLine();
         }

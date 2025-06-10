@@ -67,47 +67,59 @@ namespace HitHandGame
 
             int totalRead = 0;
             int iterations = 0;
-            const int maxIterations = 1000; // 防止無限循環
+            const int maxIterations = 2000; // 增加最大迭代次數
+            int consecutiveZeroReads = 0; // 連續零讀取計數
 
             while (totalRead < count && iterations < maxIterations)
             {
                 iterations++;
-                
-                // 1. 先從處理過的緩衝區複製資料
+                  // 1. 先從處理過的緩衝區複製資料
                 if (processedOffset < processedCount)
                 {
                     int toCopy = Math.Min(processedCount - processedOffset, count - totalRead);
-                    Array.Copy(processedBuffer, processedOffset, buffer, offset + totalRead, toCopy);
+                    
+                    // 使用 for 迴圈替代 Array.Copy 避免類型問題
+                    for (int i = 0; i < toCopy; i++)
+                    {
+                        buffer[offset + totalRead + i] = processedBuffer[processedOffset + i];
+                    }
+                    
                     processedOffset += toCopy;
                     totalRead += toCopy;
                     
                     if (debug && toCopy > 0)
                         Console.WriteLine($"[ImprovedSoundTouch] 從緩衝區複製 {toCopy} 樣本 (總計 {totalRead}/{count})");
                     
+                    // 如果已經取得足夠的樣本，直接返回
                     if (totalRead >= count)
                         break;
+                        
+                    // 重設連續零讀取計數，因為我們成功取得了資料
+                    consecutiveZeroReads = 0;
                 }
 
-                // 2. 檢查是否完全結束
-                if (sourceEnded && processorFlushed && processedOffset >= processedCount)
-                {
-                    if (debug)
-                        Console.WriteLine($"[ImprovedSoundTouch] 播放完全結束，最終輸出 {totalRead} 樣本");
-                    break;
-                }
-
-                // 3. 讀取來源資料並送入處理器
+                // 2. 嘗試讀取更多來源資料
                 if (!sourceEnded)
                 {
                     int sourceRead = source.Read(sourceBuffer, 0, sourceBuffer.Length);
                     if (sourceRead == 0)
                     {
-                        sourceEnded = true;
-                        if (debug)
-                            Console.WriteLine($"[ImprovedSoundTouch] 來源資料讀取完畢");
+                        consecutiveZeroReads++;
+                        if (consecutiveZeroReads >= 5) // 連續5次零讀取才認為來源結束
+                        {
+                            sourceEnded = true;
+                            if (debug)
+                                Console.WriteLine($"[ImprovedSoundTouch] 來源資料讀取完畢 (連續 {consecutiveZeroReads} 次零讀取)");
+                        }
+                        else if (debug)
+                        {
+                            Console.WriteLine($"[ImprovedSoundTouch] 來源暫時沒有資料 ({consecutiveZeroReads}/5)");
+                        }
                     }
                     else
                     {
+                        consecutiveZeroReads = 0; // 重設計數
+                        
                         // 確保樣本數是聲道數的倍數
                         if (sourceRead % channels != 0)
                         {
@@ -126,7 +138,7 @@ namespace HitHandGame
                     }
                 }
 
-                // 4. 如果來源結束且還沒 flush，執行 flush
+                // 3. 如果來源結束且還沒 flush，執行 flush
                 if (sourceEnded && !processorFlushed)
                 {
                     processor.Flush();
@@ -135,7 +147,7 @@ namespace HitHandGame
                         Console.WriteLine($"[ImprovedSoundTouch] 執行 Flush()");
                 }
 
-                // 5. 從處理器取出資料
+                // 4. 從處理器取出資料
                 int maxFrames = processedBuffer.Length / channels;
                 int receivedFrames = processor.ReceiveSamples(processedBuffer, maxFrames);
                 
@@ -149,20 +161,26 @@ namespace HitHandGame
                 }
                 else
                 {
-                    // 如果沒有取得資料且來源已結束
+                    // 如果沒有取得資料
                     if (sourceEnded && processorFlushed)
                     {
+                        // 來源已結束且已 flush，但沒有更多輸出資料
                         if (debug)
-                            Console.WriteLine($"[ImprovedSoundTouch] 處理器無更多資料，播放結束");
+                            Console.WriteLine($"[ImprovedSoundTouch] 處理器無更多資料，播放結束，最終輸出 {totalRead} 樣本");
                         break;
                     }
                     
-                    if (debug && !sourceEnded)
-                        Console.WriteLine($"[ImprovedSoundTouch] 暫時無輸出資料，需要更多輸入");
-                    
-                    // 如果來源沒結束但暫時沒輸出，繼續循環讀取更多資料
-                    if (!sourceEnded)
+                    // 如果來源沒結束但暫時沒輸出，繼續讀取更多來源資料
+                    if (!sourceEnded && consecutiveZeroReads < 5)
+                    {
+                        if (debug)
+                            Console.WriteLine($"[ImprovedSoundTouch] 暫時無輸出資料，繼續讀取來源");
                         continue;
+                    }
+                    
+                    // 來源已結束，但還沒 flush 或 flush 後還有可能產生更多資料
+                    if (debug)
+                        Console.WriteLine($"[ImprovedSoundTouch] 等待處理器產生更多資料");
                 }
             }
 
@@ -172,7 +190,7 @@ namespace HitHandGame
             }
 
             if (debug && totalRead > 0)
-                Console.WriteLine($"[ImprovedSoundTouch] Read() 完成，返回 {totalRead} 樣本");
+                Console.WriteLine($"[ImprovedSoundTouch] Read() 完成，返回 {totalRead} 樣本，迭代 {iterations} 次");
 
             return totalRead;
         }public void Dispose()
