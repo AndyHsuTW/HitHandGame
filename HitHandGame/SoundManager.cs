@@ -1,4 +1,5 @@
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -222,15 +223,33 @@ namespace HitHandGame
 
             try
             {
-                // 播放第1個音檔
-                await PlaySoundAndWait(firstFile, speed);
-                
-                // 播放第2個音檔 (hit.mp3)
-                await PlaySoundAndWait(hitFile, speed);
-                
-                // 播放第3個音檔
-                await PlaySoundAndWait(thirdFile, speed);
-                
+                StopCurrentSound();
+                using var firstReader = new AudioFileReader(firstFile);
+                using var hitReader = new AudioFileReader(hitFile);
+                using var thirdReader = new AudioFileReader(thirdFile);
+
+                var concat = new ConcatenatingSampleProvider(new[] { firstReader, hitReader, thirdReader });
+                ISampleProvider provider = concat;
+                if (speed != 1.0f)
+                {
+                    provider = new ImprovedSoundTouchSampleProvider(provider, speed);
+                }
+
+                _wavePlayer = new WaveOutEvent();
+                _wavePlayer.Init(provider);
+                _isPlaying = true;
+                var playbackComplete = new TaskCompletionSource<bool>();
+                _wavePlayer.PlaybackStopped += (s, e) =>
+                {
+                    _wavePlayer?.Dispose();
+                    _wavePlayer = null;
+                    _isPlaying = false;
+                    playbackComplete.SetResult(true);
+                };
+
+                _wavePlayer.Play();
+                await playbackComplete.Task;
+
                 Console.WriteLine("三音檔組合播放完成");
             }
             catch (Exception ex)
@@ -255,10 +274,10 @@ namespace HitHandGame
             StopCurrentSound();
             _audioFileReader = new AudioFileReader(filePath);
             ISampleProvider sampleProvider = _audioFileReader;
-            Console.WriteLine($"[DEBUG] WaveFormat: {_audioFileReader.WaveFormat.Encoding}, {_audioFileReader.WaveFormat.BitsPerSample}bit, {_audioFileReader.WaveFormat.SampleRate}Hz, {_audioFileReader.WaveFormat.Channels}ch");            if (speed != 1.0f)
+            Console.WriteLine($"[DEBUG] WaveFormat: {_audioFileReader.WaveFormat.Encoding}, {_audioFileReader.WaveFormat.BitsPerSample}bit, {_audioFileReader.WaveFormat.SampleRate}Hz, {_audioFileReader.WaveFormat.Channels}ch");
+            if (speed != 1.0f)
             {
-                // 使用 PlaybackSpeedSampleProvider（經測試能正常工作的解決方案）
-                sampleProvider = new PlaybackSpeedSampleProvider(_audioFileReader, speed);
+                sampleProvider = new ImprovedSoundTouchSampleProvider(_audioFileReader, speed);
             }
             _wavePlayer = new WaveOutEvent();
             _wavePlayer.Init(sampleProvider);
@@ -267,6 +286,8 @@ namespace HitHandGame
             _wavePlayer.PlaybackStopped += (sender, e) =>
             {
                 Console.WriteLine($"音效播放完成: {Path.GetFileName(filePath)}");
+                _wavePlayer?.Dispose();
+                _wavePlayer = null;
                 _isPlaying = false;
                 playbackComplete.SetResult(true);
             };
