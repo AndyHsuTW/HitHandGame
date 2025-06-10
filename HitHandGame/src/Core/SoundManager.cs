@@ -6,8 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using SoundTouch;
+using HitHandGame.Audio.Providers;
+using HitHandGame.Audio.Effects;
 
-namespace HitHandGame
+namespace HitHandGame.Core
 {
     /// <summary>
     /// 音效管理器 - 負責載入、管理和隨機播放音效檔案
@@ -231,12 +233,11 @@ namespace HitHandGame
                 // 使用自定義的順序播放提供者
                 var sequentialProvider = new SequentialSampleProvider(new ISampleProvider[] { firstReader, hitReader, thirdReader }, true);
                 ISampleProvider provider = sequentialProvider;
-                
-                // 如果需要調整速度，包裝在 SoundTouch 處理器中
+                  // 如果需要調整速度，包裝在 SpeedController 中
                 if (speed != 1.0f)
                 {
-                    Console.WriteLine($"[DEBUG] 使用 SoundTouch 調整速度: {speed}x");
-                    provider = new ImprovedSoundTouchSampleProvider(provider, speed, true); // 開啟偵錯
+                    Console.WriteLine($"[DEBUG] 使用 SpeedController 調整速度: {speed}x");
+                    provider = SpeedController.ApplySpeedChange(provider, speed, true);
                 }
 
                 StopCurrentSound();
@@ -289,11 +290,10 @@ namespace HitHandGame
             
             Console.WriteLine($"[DEBUG] 播放: {Path.GetFileName(filePath)}, 速度: {speed}x");
             Console.WriteLine($"[DEBUG] WaveFormat: {_audioFileReader.WaveFormat.Encoding}, {_audioFileReader.WaveFormat.BitsPerSample}bit, {_audioFileReader.WaveFormat.SampleRate}Hz, {_audioFileReader.WaveFormat.Channels}ch");
-            
-            if (speed != 1.0f)
+              if (speed != 1.0f)
             {
-                Console.WriteLine($"[DEBUG] 使用 SoundTouch 調整速度: {speed}x");
-                sampleProvider = new ImprovedSoundTouchSampleProvider(_audioFileReader, speed, true); // 開啟偵錯
+                Console.WriteLine($"[DEBUG] 使用 SpeedController 調整速度: {speed}x");
+                sampleProvider = SpeedController.ApplySpeedChange(_audioFileReader, speed, true);
             }
             
             _wavePlayer = new WaveOutEvent();

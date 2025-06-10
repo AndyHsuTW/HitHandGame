@@ -2,7 +2,7 @@ using System;
 using NAudio.Wave;
 using SoundTouch;
 
-namespace HitHandGame
+namespace HitHandGame.Audio.Providers
 {
     /// <summary>
     /// 改進版的 SoundTouchSampleProvider - 修正無聲音問題

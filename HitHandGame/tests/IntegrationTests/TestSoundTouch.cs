@@ -2,7 +2,7 @@ using System;
 using NAudio.Wave;
 using SoundTouch;
 
-namespace HitHandGame
+namespace HitHandGame.Tests.IntegrationTests
 {
     /// <summary>
     /// 簡化的 SoundTouch 測試類別，用於診斷播放問題

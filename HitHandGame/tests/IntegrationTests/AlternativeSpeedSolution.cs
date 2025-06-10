@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
-namespace HitHandGame
+namespace HitHandGame.Tests.IntegrationTests
 {
     /// <summary>
     /// 不使用 SoundTouch 的替代速度調整方案

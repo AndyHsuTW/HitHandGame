@@ -2,8 +2,9 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using NAudio.Wave;
+using HitHandGame.Audio.Providers;
 
-namespace HitHandGame
+namespace HitHandGame.Tests.DiagnosticTests
 {
     /// <summary>
     /// WaveFormat 診斷工具 - 專門檢查變速播放時的 WaveFormat 問題

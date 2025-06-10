@@ -22,14 +22,18 @@
 ## 使用方法
 
 ### 1. 準備音效檔案
-在程式目錄下建立 `Sounds` 資料夾，並將音效檔案放入其中：
+在程式目錄下的 `assets/Sounds` 資料夾中放入音效檔案：
 ```
 HitHandGame/
-├── Sounds/
-│   ├── hit.mp3
-│   ├── 1.mp3
-│   ├── 2.mp3
-│   └── ...
+├── assets/
+│   └── Sounds/
+│       ├── hit.mp3
+│       ├── 1.mp3
+│       ├── 2.mp3
+│       └── ...
+├── src/
+├── docs/
+├── scripts/
 └── HitHandGame.exe
 ```
 
@@ -80,13 +84,49 @@ dotnet publish -c Release -r win-x86 --self-contained
 
 ## 專案結構
 
+重構後的專案結構更加清晰和組織化：
+
 ```
 HitHandGame/
-├── Program.cs          # 主程式進入點
-├── SoundManager.cs     # 音效管理類別
-├── Sounds/            # 音效檔案目錄
-├── HitHandGame.csproj # 專案檔案
-└── README.md          # 說明文件
+├── src/                           # 主要程式碼
+│   ├── Core/                     # 核心業務邏輯
+│   │   ├── SoundManager.cs      # 音效管理器
+│   │   └── Models/              # 資料模型
+│   ├── Audio/                   # 音效處理
+│   │   ├── Providers/           # 音效提供者
+│   │   │   ├── ImprovedSoundTouchSampleProvider.cs
+│   │   │   └── SequentialSampleProvider.cs
+│   │   └── Effects/             # 音效特效
+│   │       └── SpeedController.cs
+│   ├── UI/                      # 使用者介面
+│   │   ├── ConsoleUI.cs        # 主控台界面
+│   │   └── MenuSystem.cs       # 選單系統
+│   └── Utilities/              # 輔助工具
+│       └── AudioHelper.cs      # 音效輔助函數
+├── tests/                       # 測試程式碼
+│   ├── DiagnosticTests/        # 診斷測試
+│   │   ├── WaveFormatDiagnostics.cs
+│   │   └── SimpleSpeedTest.cs
+│   └── IntegrationTests/       # 整合測試
+│       ├── AlternativeSpeedSolution.cs
+│       └── TestSoundTouch.cs
+├── docs/                       # 技術文件
+│   ├── INDEX.md              # 文檔索引
+│   ├── SOLUTION_LOG.md       # 解決方案記錄
+│   ├── TROUBLESHOOTING_LOG.md # 故障排除記錄
+│   └── SUCCESS_CASE_SUMMARY.md # 成功案例總結
+├── assets/                     # 資源檔案
+│   └── Sounds/                # 音效檔案
+│       ├── hit.mp3
+│       ├── 1.mp3 - 9.mp3
+│       └── README.md
+├── scripts/                   # 建置腳本
+│   ├── publish.bat
+│   └── run.bat
+├── README.md                 # 專案主要說明文件
+├── Program.cs                # 程式進入點
+├── HitHandGame.csproj       # 專案檔案
+└── .gitignore
 ```
 
 ## 開發說明

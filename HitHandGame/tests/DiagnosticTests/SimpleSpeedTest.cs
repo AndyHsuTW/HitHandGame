@@ -2,8 +2,9 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using NAudio.Wave;
+using HitHandGame.Audio.Providers;
 
-namespace HitHandGame
+namespace HitHandGame.Tests.DiagnosticTests
 {
     /// <summary>
     /// 簡單的速度測試類別，用於診斷音效播放問題

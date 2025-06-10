@@ -2,7 +2,7 @@ using NAudio.Wave;
 using System;
 using System.Collections.Generic;
 
-namespace HitHandGame
+namespace HitHandGame.Audio.Providers
 {
     /// <summary>
     /// 順序播放多個音檔的 SampleProvider，確保音檔無縫銜接
